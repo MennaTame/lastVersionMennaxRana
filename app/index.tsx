@@ -12,13 +12,14 @@ import ProgressCard from "../components/ProgressCard";
 import TaskItem from "../components/TaskItem";
 
 import {
-  completeTask,
   deleteTask,
   getActiveTasks,
   getProgress,
   getTodayTasks,
   // ⚠️ لازم يكون موجود في storage (لو مش موجود قولي أعملهولك)
   toggleSubTask,
+  updateTaskStatus,
+  deleteDoneTasks,
 } from "../services/storage";
 
 export default function Home() {
@@ -39,7 +40,7 @@ export default function Home() {
 
     // منع التكرار
     const uniqueTasks = Array.from(
-      new Map(allTasks.map((t) => [t.id, t])).values()
+      new Map(allTasks.map((t) => [t.id, t])).values(),
     );
 
     setTasks(uniqueTasks);
@@ -47,14 +48,20 @@ export default function Home() {
   };
 
   // ✅ complete task
-  const handleComplete = async (id: string) => {
-    await completeTask(id);
+  const handleStatusChange = async (id: string, status: string) => {
+    await updateTaskStatus(id, status as any);
     loadData();
   };
 
   // 🗑️ delete task (اختياري)
   const handleDelete = async (id: string) => {
     await deleteTask(id);
+    loadData();
+  };
+
+  // 🗑️ delete done tasks
+  const handleDeleteDone = async () => {
+    await deleteDoneTasks();
     loadData();
   };
 
@@ -80,10 +87,11 @@ export default function Home() {
         renderItem={({ item }) => (
           <TaskItem
             task={item}
-            onComplete={handleComplete}
+            onStatusChange={handleStatusChange}
             onEdit={(id) =>
               router.push({ pathname: "/add-task", params: { id } })
             }
+            onDelete={handleDelete}
             onToggleSub={handleToggleSub} // ✅ ده أهم سطر
           />
         )}
@@ -95,6 +103,14 @@ export default function Home() {
         onPress={() => router.push("/add-task")}
       >
         <Text style={{ color: "#fff", fontSize: 24 }}>+</Text>
+      </TouchableOpacity>
+
+      {/* Delete done button */}
+      <TouchableOpacity
+        style={[styles.fab, { bottom: 90, backgroundColor: "#E53935" }]}
+        onPress={handleDeleteDone}
+      >
+        <Text style={{ color: "#fff", fontSize: 18 }}>🗑️</Text>
       </TouchableOpacity>
     </View>
   );

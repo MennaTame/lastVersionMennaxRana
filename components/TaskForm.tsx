@@ -1,26 +1,40 @@
 import {
   View,
   TextInput,
-  Button,
   Text,
   TouchableOpacity,
   StyleSheet,
+  ScrollView,
 } from "react-native";
 import { useState, useEffect } from "react";
 
-export default function TaskForm({ initialData, onSubmit }: any) {
+type SubTask = {
+  id: string;
+  title: string;
+  completed: boolean;
+};
+
+type Props = {
+  initialData?: any;
+  onSubmit: (data: any) => void;
+};
+
+export default function TaskForm({ initialData, onSubmit }: Props) {
   const [title, setTitle] = useState("");
   const [time, setTime] = useState("");
+  const [category, setCategory] = useState("");
+  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
 
-  const [subtasks, setSubtasks] = useState<any[]>([]);
+  const [subtasks, setSubtasks] = useState<SubTask[]>([]);
   const [subInput, setSubInput] = useState("");
 
   useEffect(() => {
     if (initialData) {
       setTitle(initialData.title || "");
       setTime(initialData.time || "");
+      setCategory(initialData.category || "");
+      setPriority(initialData.priority || "medium");
 
-      // 🔥 normalize subtasks
       setSubtasks(
         Array.isArray(initialData.subtasks)
           ? initialData.subtasks
@@ -33,7 +47,7 @@ export default function TaskForm({ initialData, onSubmit }: any) {
   const addSubtask = () => {
     if (!subInput.trim()) return;
 
-    const newSub = {
+    const newSub: SubTask = {
       id: Date.now().toString(),
       title: subInput.trim(),
       completed: false,
@@ -48,19 +62,42 @@ export default function TaskForm({ initialData, onSubmit }: any) {
     setSubtasks((prev) => prev.filter((s) => s.id !== id));
   };
 
-  // 💾 submit (FIXED)
+  // 💾 submit
   const handleSubmit = () => {
     onSubmit({
-      ...initialData, // 🔥 مهم جدًا (يحافظ على id وقت التعديل)
+      ...initialData,
       title,
       time,
+      category,
+      priority,
       subtasks,
     });
   };
 
+  // 🎨 priority button
+  const PriorityBtn = ({ value }: any) => (
+    <TouchableOpacity
+      onPress={() => setPriority(value)}
+      style={[
+        styles.priorityBtn,
+        priority === value && styles.activePriority,
+      ]}
+    >
+      <Text
+        style={[
+          styles.priorityText,
+          priority === value && styles.activePriorityText,
+        ]}
+      >
+        {value}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
-    <View style={styles.container}>
-      {/* Title */}
+    <ScrollView contentContainerStyle={styles.container}>
+      {/* TITLE */}
+      <Text style={styles.label}>Title</Text>
       <TextInput
         value={title}
         onChangeText={setTitle}
@@ -68,16 +105,34 @@ export default function TaskForm({ initialData, onSubmit }: any) {
         style={styles.input}
       />
 
-      {/* Time */}
+      {/* CATEGORY */}
+      <Text style={styles.label}>Category</Text>
       <TextInput
-        value={time}
-        onChangeText={setTime}
-        placeholder="Time"
+        value={category}
+        onChangeText={setCategory}
+        placeholder="Work / Personal"
         style={styles.input}
       />
 
-      {/* Subtasks */}
-      <Text style={styles.section}>Subtasks</Text>
+      {/* TIME */}
+      <Text style={styles.label}>Time</Text>
+      <TextInput
+        value={time}
+        onChangeText={setTime}
+        placeholder="10:00 AM"
+        style={styles.input}
+      />
+
+      {/* PRIORITY */}
+      <Text style={styles.label}>Priority</Text>
+      <View style={styles.row}>
+        <PriorityBtn value="low" />
+        <PriorityBtn value="medium" />
+        <PriorityBtn value="high" />
+      </View>
+
+      {/* SUBTASKS */}
+      <Text style={styles.label}>Subtasks</Text>
 
       <View style={styles.row}>
         <TextInput
@@ -88,7 +143,7 @@ export default function TaskForm({ initialData, onSubmit }: any) {
         />
 
         <TouchableOpacity style={styles.addBtn} onPress={addSubtask}>
-          <Text style={{ color: "#fff" }}>+</Text>
+          <Text style={{ color: "#fff", fontSize: 18 }}>+</Text>
         </TouchableOpacity>
       </View>
 
@@ -102,28 +157,32 @@ export default function TaskForm({ initialData, onSubmit }: any) {
         </View>
       ))}
 
-      {/* Save */}
-      <Button title="Save" onPress={handleSubmit} />
-    </View>
+      {/* SAVE BUTTON */}
+      <TouchableOpacity style={styles.saveBtn} onPress={handleSubmit}>
+        <Text style={styles.saveText}>Save Task</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    padding: 16,
     gap: 12,
+  },
+
+  label: {
+    fontWeight: "600",
+    fontSize: 13,
+    color: "#555",
   },
 
   input: {
     backgroundColor: "#fff",
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#ddd",
-  },
-
-  section: {
-    fontWeight: "bold",
-    marginTop: 10,
   },
 
   row: {
@@ -134,9 +193,9 @@ const styles = StyleSheet.create({
 
   addBtn: {
     backgroundColor: "#6C4CF1",
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -146,6 +205,39 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "#f9f9f9",
     padding: 10,
-    borderRadius: 8,
+    borderRadius: 10,
+  },
+
+  priorityBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: "#eee",
+  },
+
+  activePriority: {
+    backgroundColor: "#6C4CF1",
+  },
+
+  priorityText: {
+    color: "#555",
+  },
+
+  activePriorityText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+
+  saveBtn: {
+    marginTop: 20,
+    backgroundColor: "#6C4CF1",
+    padding: 14,
+    borderRadius: 14,
+    alignItems: "center",
+  },
+
+  saveText: {
+    color: "#fff",
+    fontWeight: "700",
   },
 });
